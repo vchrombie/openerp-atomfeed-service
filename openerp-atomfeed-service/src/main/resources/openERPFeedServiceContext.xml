@@ -54,6 +54,6 @@
     <context:component-scan base-package="org.bahmni.feed.openerp">
         <context:exclude-filter type="regex" expression="org\.bahmni\.feed\.openerp\.controller\..*"/>
     </context:component-scan>
-
+    <context:component-scan base-package="org.bahmni.feed.crater" />
 
 </beans>
