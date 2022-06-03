@@ -1,5 +1,10 @@
 package org.bahmni.openerp.web.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bahmni.crater.web.client.CraterClient;
+import org.bahmni.crater.web.request.CraterRequest;
 import org.bahmni.openerp.web.OpenERPException;
 import org.bahmni.openerp.web.client.OpenERPClient;
 import org.bahmni.openerp.web.request.OpenERPRequest;
@@ -12,12 +17,15 @@ import java.util.Vector;
 
 @Service
 public class CustomerService {
+    private static final Logger logger = LogManager.getLogger(CustomerService.class);
     private OpenERPClient openERPClient;
+    private CraterClient craterClient;
     private OpenERPCustomerParameterMapper parameterMapper;
 
     @Autowired
-    public CustomerService(OpenERPClient openERPClient) {
+    public CustomerService(OpenERPClient openERPClient, CraterClient craterClient) {
         this.openERPClient = openERPClient;
+        this.craterClient = craterClient;
         this.parameterMapper = new OpenERPCustomerParameterMapper();
     }
 
@@ -30,6 +38,17 @@ public class CustomerService {
         if (noCustomersFound(findCustomersWithPatientReference(customer.getRef()))) {
             OpenERPRequest request = parameterMapper.mapCustomerParams(customer, "create");
             openERPClient.execute(request);
+            // TODO move it to different place?
+            try {
+                int customerId = craterClient.createCraterCustomer(CraterRequest.getCreateCustomerRequest(customer));
+                // todo save customer id
+            } catch (JsonProcessingException e) {
+                // ignore it for now
+                logger.error("Could not create crater customer", e);
+            } catch (RuntimeException e) {
+                logger.error("Error during post to crater", e);
+            }
+
         } else
             throw new OpenERPException(String.format("Customer with id, name already exists: %s, %s ", customer.getRef(), customer.getName()));
     }
